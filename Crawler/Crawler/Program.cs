@@ -4,38 +4,46 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Crawler
-{
-    class Program
-    {
-        public async static Task Main(string[] args)
-        {
-            var websiteUrl = args[0];
-            Console.WriteLine(websiteUrl);
+namespace Crawler {
+    public class Program {
+        public static async Task Main(string[] args) {
+            if (args.Length <1) { throw new ArgumentNullException("No URL Address"); } 
+            string websiteUrl = args[0];
+            if (!(Uri.IsWellFormedUriString(websiteUrl, UriKind.Absolute))) throw new ArgumentException("Incorrect URL");
+            var httpClient = new HttpClient();
+            try {
+                var response = await httpClient.GetAsync(websiteUrl);
 
-            var https = new HttpClient();
-
-            var response = await https.GetAsync(websiteUrl);
-            Console.WriteLine(response);
-
-            var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(content); 
-            
-            var a = $"Content {content}";
-            var b = @"\.-]";
-            var regex = new Regex("([a-zA-Z0-9+._-]+@[a-zA-Z0-9._-]+\\.[a-zA-Z0-9_-]+)");
-
-
-            var matchCollection = regex.Matches(content);
-
-           
-
-            foreach(var item in matchCollection)
-            {
-                Console.WriteLine(item);
+                if (response.IsSuccessStatusCode) {
+                    var siteContent = await response.Content.ReadAsStringAsync();
+                    var pattern = @"\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*";
+                    Regex regex = new(pattern, RegexOptions.IgnoreCase); 
+                    var mathCollection = regex.Matches(siteContent);
+                    var set = new HashSet<string>();
+                    foreach (var item in mathCollection)
+                    {
+                        set.Add(item.ToString());
+                    }
+                        
+                    if (set.Count >= 1)
+                    {
+                        foreach (var item in set)
+                        {
+                            Console.WriteLine(item);
+                        }
+                    }
+                    else { 
+                        Console.WriteLine("No Mail addresses"); 
+                    }    
+                }
             }
-
-
+            catch (Exception e) {
+                Console.WriteLine("Error during site downland: " + e.Message);
+            }
+            finally
+            {
+                httpClient.Dispose();
+            }
         }
     }
 }
